@@ -1,11 +1,20 @@
-use std::io;
-use crate::color::Color;
-
 mod vec3;
 mod color;
 mod ray;
 
+use std::io;
+use std::ops::Mul;
+use crate::color::Color;
+use crate::ray::Ray;
+
+fn ray_color(r: &Ray) -> Color {
+    let unit_direction = vec3::unit_vector(r.direction());
+    let t = 0.5 * (unit_direction.y() + 1.0);
+    (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
+}
+
 fn main() {
+    const ASPECT_RATIO: f64 = 16.0 / 9.0;
     const IMAGE_WIDTH: i32 = 256;
     const IMAGE_HEIGHT: i32 = 256;
 
