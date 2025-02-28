@@ -15,8 +15,8 @@ fn ray_color(r: &Ray) -> Color {
 
 fn main() {
     const ASPECT_RATIO: f64 = 16.0 / 9.0;
-    const IMAGE_WIDTH: i32 = 256;
-    const IMAGE_HEIGHT: i32 = 256;
+    const IMAGE_WIDTH: i32 = 400;
+    const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
 
     print!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT);
 
