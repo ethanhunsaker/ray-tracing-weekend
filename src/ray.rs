@@ -26,4 +26,3 @@ impl Ray {
         self.orig + self.dir * t
     }
 }
-
