@@ -51,7 +51,10 @@ fn main() {
         for i in 0..IMAGE_WIDTH {
             let u = i as f64 / (IMAGE_WIDTH - 1) as f64;
             let v = j as f64 / (IMAGE_HEIGHT - 1) as f64;
-            let r = Ray::new(origin, lower_left_corner + u * horizontal + v * vertical - origin);
+            let r = Ray::new(
+                origin,
+                lower_left_corner + u * horizontal + v * vertical - origin,
+            );
             let pixel_color = ray_color(&r);
             color::write_color(&mut io::stdout(), pixel_color);
         }
