@@ -29,8 +29,7 @@ impl Camera {
         let origin = lookfrom;
         let horizontal = viewport_width * u;
         let vertical = viewport_height * v;
-        let lower_left_corner =
-            origin - horizontal / 2.0 - vertical / 2.0 - w;
+        let lower_left_corner = origin - horizontal / 2.0 - vertical / 2.0 - w;
 
         Camera {
             origin,
