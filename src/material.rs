@@ -3,14 +3,13 @@ use crate::hittable::HitRecord;
 use crate::ray::Ray;
 use crate::{common, vec3};
 
+pub struct ScatterRecord {
+    pub attenuation: Color,
+    pub scattered: Ray,
+}
+
 pub trait Material: Send + Sync {
-    fn scatter(
-        &self,
-        r_in: &Ray,
-        rec: &HitRecord,
-        attenuation: &mut Color,
-        scattered: &mut Ray,
-    ) -> bool;
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord>;
 }
 
 pub struct Lambertian {
@@ -24,22 +23,17 @@ impl Lambertian {
 }
 
 impl Material for Lambertian {
-    fn scatter(
-        &self,
-        _r_in: &Ray,
-        rec: &HitRecord,
-        attenuation: &mut Color,
-        scattered: &mut Ray,
-    ) -> bool {
+    fn scatter(&self, _r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
         let mut scatter_direction = rec.normal + vec3::random_unit_vector();
 
         if scatter_direction.near_zero() {
             scatter_direction = rec.normal;
         }
 
-        *attenuation = self.albedo;
-        *scattered = Ray::new(rec.p, scatter_direction);
-        true
+        Some(ScatterRecord {
+            attenuation: self.albedo,
+            scattered: Ray::new(rec.p, scatter_direction),
+        })
     }
 }
 
@@ -58,18 +52,18 @@ impl Metal {
 }
 
 impl Material for Metal {
-    fn scatter(
-        &self,
-        r_in: &Ray,
-        rec: &HitRecord,
-        attenuation: &mut Color,
-        scattered: &mut Ray,
-    ) -> bool {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
         let reflected = vec3::reflect(vec3::unit_vector(r_in.direction()), rec.normal);
+        let scattered = Ray::new(rec.p, reflected + self.fuzz * vec3::random_in_unit_sphere());
 
-        *attenuation = self.albedo;
-        *scattered = Ray::new(rec.p, reflected + self.fuzz * vec3::random_in_unit_sphere());
-        vec3::dot(scattered.direction(), rec.normal) > 0.0
+        if vec3::dot(scattered.direction(), rec.normal) > 0.0 {
+            Some(ScatterRecord {
+                attenuation: self.albedo,
+                scattered,
+            })
+        } else {
+            None
+        }
     }
 }
 
@@ -92,13 +86,7 @@ impl Dielectric {
 }
 
 impl Material for Dielectric {
-    fn scatter(
-        &self,
-        r_in: &Ray,
-        rec: &HitRecord,
-        attenuation: &mut Color,
-        scattered: &mut Ray,
-    ) -> bool {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
         let refraction_ratio = if rec.front_face {
             1.0 / self.ir
         } else {
@@ -118,8 +106,9 @@ impl Material for Dielectric {
             vec3::refract(unit_direction, rec.normal, refraction_ratio)
         };
 
-        *attenuation = Color::new(1.0, 1.0, 1.0);
-        *scattered = Ray::new(rec.p, direction);
-        true
+        Some(ScatterRecord {
+            attenuation: Color::new(1.0, 1.0, 1.0),
+            scattered: Ray::new(rec.p, direction),
+        })
     }
 }
