@@ -116,6 +116,8 @@ fn main() {
 
     let world = random_scene();
 
+    fs::create_dir_all("out").expect("Failed to create output directory");
+
     for frame in 0..180 {
         eprintln!("\rFrame {} started", frame);
 
@@ -148,8 +150,6 @@ fn main() {
 
         // Render
 
-        fs::create_dir_all("out").expect("Failed to create output directory");
-
         let filename = format!("out/frame_{:03}.ppm", frame);
         let file =
             fs::File::create(&filename).expect(&format!("Failed to create file: {}", filename));
@@ -178,6 +178,6 @@ fn main() {
             }
         }
 
-        eprintln!("\rFrame {} completed", frame);
+        eprintln!("\nFrame {} completed", frame);
     }
 }
