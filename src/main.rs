@@ -8,7 +8,8 @@ mod ray;
 mod sphere;
 mod vec3;
 
-use std::io;
+use std::fs;
+use std::io::{BufWriter, Write};
 use std::sync::Arc;
 
 use rayon::prelude::*;
@@ -115,47 +116,68 @@ fn main() {
 
     let world = random_scene();
 
-    // Camera
+    for frame in 0..180 {
+        eprintln!("\rFrame {} started", frame);
 
-    let lookfrom = Point3::new(13.0, 2.0, 3.0);
-    let lookat = Point3::new(0.0, 0.0, 0.0);
-    let vup = Point3::new(0.0, 1.0, 0.0);
-    let dist_to_focus = 10.0;
-    let aperture = 0.1;
+        let angle_per_frame = 2.0 * std::f64::consts::PI / 180.0;
+        let angle = frame as f64 * angle_per_frame;
 
-    let cam = Camera::new(
-        lookfrom,
-        lookat,
-        vup,
-        20.0,
-        ASPECT_RATIO,
-        aperture,
-        dist_to_focus,
-    );
+        let radius = 13.0;
+        let height = 2.0;
 
-    // Render
+        let x = radius * angle.cos();
+        let z = radius * angle.sin();
 
-    print!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT);
+        // Camera
 
-    for j in (0..IMAGE_HEIGHT).rev() {
-        eprint!("\rScanlines remaining: {}", (j));
-        let pixel_colors: Vec<_> = (0..IMAGE_WIDTH)
-            .into_par_iter()
-            .map(|i| {
-                let mut pixel_color = Color::new(0.0, 0.0, 0.0);
-                for _ in 0..SAMPLES_PER_PIXEL {
-                    let u = ((i as f64) + common::random_double()) / (IMAGE_WIDTH - 1) as f64;
-                    let v = ((j as f64) + common::random_double()) / (IMAGE_HEIGHT - 1) as f64;
-                    let r = cam.get_ray(u, v);
-                    pixel_color += ray_color(&r, &world, MAX_DEPTH);
-                }
-                pixel_color
-            })
-            .collect();
-        for pixel_color in pixel_colors {
-            color::write_color(&mut io::stdout(), pixel_color, SAMPLES_PER_PIXEL);
+        let lookfrom = Point3::new(x, height, z);
+        let lookat = Point3::new(0.0, 0.0, 0.0);
+        let vup = Point3::new(0.0, 1.0, 0.0);
+        let dist_to_focus = 10.0;
+        let aperture = 0.1;
+
+        let cam = Camera::new(
+            lookfrom,
+            lookat,
+            vup,
+            20.0,
+            ASPECT_RATIO,
+            aperture,
+            dist_to_focus,
+        );
+
+        // Render
+
+        fs::create_dir_all("out").expect("Failed to create output directory");
+
+        let filename = format!("out/frame_{:03}.ppm", frame);
+        let file =
+            fs::File::create(&filename).expect(&format!("Failed to create file: {}", filename));
+        let mut writer = BufWriter::new(file);
+
+        writeln!(&mut writer, "P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT)
+            .expect("Error writing header");
+
+        for j in (0..IMAGE_HEIGHT).rev() {
+            eprint!("\rFrame: {}, Scanlines remaining: {}", frame, j);
+            let pixel_colors: Vec<_> = (0..IMAGE_WIDTH)
+                .into_par_iter()
+                .map(|i| {
+                    let mut pixel_color = Color::new(0.0, 0.0, 0.0);
+                    for _ in 0..SAMPLES_PER_PIXEL {
+                        let u = ((i as f64) + common::random_double()) / (IMAGE_WIDTH - 1) as f64;
+                        let v = ((j as f64) + common::random_double()) / (IMAGE_HEIGHT - 1) as f64;
+                        let r = cam.get_ray(u, v);
+                        pixel_color += ray_color(&r, &world, MAX_DEPTH);
+                    }
+                    pixel_color
+                })
+                .collect();
+            for pixel_color in pixel_colors {
+                color::write_color(&mut writer, pixel_color, SAMPLES_PER_PIXEL);
+            }
         }
-    }
 
-    eprint!("\nDone.\n");
+        eprintln!("\rFrame {} completed", frame);
+    }
 }
